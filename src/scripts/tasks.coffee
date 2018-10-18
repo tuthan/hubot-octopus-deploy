@@ -7,6 +7,7 @@
 # Configuration:
 #   HUBOT_OCTO_ENDPOINT
 #   HUBOT_OCTO_APIKEY
+#   HUBOT_OCTO_ROLE
 #
 # Commands:
 #  hubot octo active tasks - Returns active tasks
@@ -27,7 +28,7 @@ DeployHelper = require '../deploy-helper'
   
 baseUrl = process.env.HUBOT_OCTO_ENDPOINT || ""
 apiKey = process.env.HUBOT_OCTO_APIKEY || ""
-
+role = process.env.HUBOT_OCTO_ROLE || "admin"
 client = OctopusClient.Create({
   endpoint: baseUrl,
   apiKey: apiKey
@@ -54,7 +55,7 @@ module.exports = (robot) ->
       tasks = (formatTask task for task in body.Items)
       msg.send "Last #{totalTasks} tasks\n#{tasks[0..totalTasks].join("\n")}"
 
-  robot.respond /octo status (.+)/i, (msg) ->
+  robot.respond /octo status (.+)/i, (msg) ->    
     criteria = msg.match[1]
     msg.send 'Retrieving status for you now...'
     client.resources.dashboard.get()
@@ -85,11 +86,14 @@ module.exports = (robot) ->
       msg.reply error
 
   robot.respond /octo deploy (.+) > ([0-9a-zA-Z.-]+) > (.+)/i, (msg) ->
+    user = robot.brain.userForName(msg.message.user.name)
+    unless robot.auth.hasRole(user, role)
+            msg.reply "Sorry, some how I forgot what you can do!!! do you has #{role} role?"
+            return
     params =
       project: msg.match[1]
       version: msg.match[2]
       env: msg.match[3]
-
     msg.send "finding project #{params.project}"
     slugName = OctoHelpers.slugIt params.project
     client.resources.projects.id(slugName).get()

@@ -25,7 +25,8 @@ module.exports =
       environments = _.map environments, (env) ->
         release = _.find releases, ['EnvironmentId', env.id]
         env.version = if release then release.ReleaseVersion else 'unknown'
-        env.state = if release then release.State else 'unknown'
+        env.state = if release then release.state else 'unknown'
+        env.state = if "success" then "ok" else env.state
         env
       name: project.Name
       environments: environments
@@ -41,11 +42,11 @@ module.exports =
 
   formatStatus: (statusReport) ->
     release = statusReport.name
-    environment = "#{_.repeat(' ', release.length)}\t"
+    environment = "#{_.repeat(' ', release.length)}"
     statusReport.environments.forEach (env) ->
-      versionLength = env.version.length
-      environment = environment + "#{_.pad(env.name, versionLength + 5, ' ')}\t"
+      versionLength = env.version.length + env.state.length + 2
+      environment = environment + "\t" +  "#{_.pad(env.name, versionLength, ' ')}"
     statusReport.environments.forEach (env) ->
       state = _.toLower(_.trim(env.state))
-      release = release + "\t" + "#{env.version} (#{state}) "
-    environment + "\n" + release
+      release = release + "\t" + "#{env.version}(#{state})"
+    "```" + environment + "\n" + release + "```"
